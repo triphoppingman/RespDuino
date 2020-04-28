@@ -33,16 +33,17 @@ const int button_1 = 14;
 const int button_2 = 15;
 
 // Motor curve
-byte motor_curve[] = {1, 3, 8, 18, 38, 78, 128, 177, 217, 237, 247, 252, 254, 255}
+const byte motor_curve[] = {1, 3, 8, 18, 38, 78, 128, 177, 217, 237, 247, 252, 254, 255};
+const int motor_curve_len = 13;
 
 // State management
 int running = 0;            // Start not running
 int raisingA = 0;            // Three directions: 1 = raising, -1 = emptying, 0 - unknown
 int raisingB = 0;            // Three directions: 1 = raising, -1 = emptying, 0 - unknown
-int motor_a2f_level = 0;      // Level of drive for motor a2f
-int motor_a2e_level = 0;      // Level of drive for motor a2e
-int motor_b2f_level = 0;      // Level of drive for motor b2f
-int motor_b2e_level = 0;      // Level of drive for motor b2e
+int motor_a2f_index = 0;      // index into the 
+int motor_a2e_index = 0;      // index of drive for motor a2e
+int motor_b2f_index = 0;      // index of drive for motor b2f
+int motor_b2e_index = 0;      // index of drive for motor b2e
 
 int motor_inc=10;             // Drive increment 
 
@@ -63,17 +64,18 @@ unsigned long debounceDelay = 150;    // the debounce time; increase if the outp
  */
 void runPumpA(int direction) {
   if(direction > 0) {
-    motor_a2f_level = motor_a2f_level <= 256 ? motor_a2f_level + motor_inc : motor_a2f_level
-    analogWrite(motor_a2f, motor_a2f_level);
+    motor_a2f_index = motor_a2f_index < motor_curve_len ? motor_a2f_index + 1 : motor_curve_len;
+    analogWrite(motor_a2f, motor_curve[motor_a2f_index]);
 
-    motor_a2e_level = motor_a2e_level <= 256 ? motor_a2e_level + motor_inc : motor_a2e_level
-    analogWrite(motor_a2e, motor_a2e_level);
+    motor_a2e_index = motor_a2e_index < motor_curve_len ? motor_a2e_index + 1 : motor_curve_len;
+    analogWrite(motor_a2e, motor_curve[motor_a2e_index]);
+
   } else if(direction < 0) {
-    motor_a2f_level = motor_a2f_level >= 0 ? motor_a2f_level - motor_inc : motor_a2f_level
-    analogWrite(motor_a2f, motor_a2f_level);
+    motor_a2f_index = motor_a2f_index > 0 ? motor_a2f_index - 1 : 0;
+    analogWrite(motor_a2f, motor_curve[motor_a2f_index]);
 
-    motor_a2e_level = motor_a2e_level <= 256 ? motor_a2e_level - motor_inc : motor_a2e_level
-    analogWrite(motor_a2e, motor_a2e_level);
+    motor_a2e_index = motor_a2e_index > 0 ? motor_a2e_index - 1 : 0;
+    analogWrite(motor_a2e, motor_curve[motor_a2e_index]);
   } else {
     analogWrite(motor_a2f, 0);
     analogWrite(motor_a2e, 0);
@@ -87,14 +89,22 @@ void runPumpA(int direction) {
  */
 void runPumpB(int direction) {
   if(direction > 0) {
-    digitalWrite(motor_b2f, HIGH);
-    digitalWrite(motor_b2e, LOW);
+    motor_b2f_index = motor_b2f_index < motor_curve_len ? motor_b2f_index + 1 : motor_curve_len;
+    analogWrite(motor_b2f, motor_curve[motor_b2f_index]);
+
+    motor_b2e_index = motor_b2e_index < motor_curve_len ? motor_b2e_index + 1 : motor_curve_len;
+    analogWrite(motor_b2e, motor_curve[motor_b2e_index]);
+
   } else if(direction < 0) {
-    digitalWrite(motor_b2f, LOW);
-    digitalWrite(motor_b2e, HIGH);
+    motor_b2f_index = motor_b2f_index > 0 ? motor_b2f_index - 1 : 0;
+    analogWrite(motor_b2f, motor_curve[motor_b2f_index]);
+
+    motor_b2e_index = motor_b2e_index > 0 ? motor_b2e_index - 1 : 0;
+    analogWrite(motor_b2e, motor_curve[motor_b2e_index]);
+
   } else {
-    digitalWrite(motor_b2f, LOW);
-    digitalWrite(motor_b2e, LOW);
+    analogWrite(motor_b2f, 0);
+    analogWrite(motor_b2e, 0);
   }
 }
 
@@ -103,6 +113,7 @@ void runPumpB(int direction) {
  */
 long getWaterLevelA() {
   long height = vesselHeight - getDistance(common_ping, echo_a);
+
   return max(height, 0);
 }
 
@@ -111,6 +122,7 @@ long getWaterLevelA() {
  */
 long getWaterLevelB() {
   long height = vesselHeight - getDistance(common_ping, echo_b);
+
   return max(height, 0);
 }
 
@@ -297,5 +309,5 @@ void loop() {
   lastButtonState = reading;
 
   // avoid quick switching
-  delay(200);
+  delay(10);
 }
